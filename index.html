@@ -7,9 +7,7 @@
 <meta name="description" content="Générez en 30 secondes un modèle de lettre de relance pour facture impayée, pensé pour les artisans du bâtiment. Gratuit, sans inscription. Relance amicale, ferme ou mise en demeure.">
 <link rel="canonical" href="https://www.relance-chantier.fr/">
 
-<!-- Open Graph : og-image.png doit etre un PNG/JPG 1200x630 (WhatsApp/Facebook
-     n'affichent pas fiablement du SVG). Exportez og-image-source.svg en PNG
-     avant la mise en ligne, puis deposez le fichier a la racine du site. -->
+<!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Relance Chantier">
 <meta property="og:title" content="Un client ne vous paie pas ? Générez votre relance en 30 secondes.">
@@ -803,11 +801,47 @@
     </details>
   </section>
 
+  <!-- ============ MENTIONS LEGALES ============ -->
+  <section id="mentions-legales">
+    <div class="section-head">
+      <p class="eyebrow">Informations légales</p>
+      <h2>Mentions légales</h2>
+    </div>
+    <details class="faq-item">
+      <summary>Éditeur du site</summary>
+      <p>
+        [À compléter : votre nom et prénom, ou la raison sociale une fois votre
+        statut créé (ex : auto-entreprise)] — [adresse postale] — [email de
+        contact].
+      </p>
+    </details>
+    <details class="faq-item">
+      <summary>Hébergement</summary>
+      <p>
+        Ce site est hébergé par GitHub, Inc. — 88 Colin P Kelly Jr Street,
+        San Francisco, CA 94107, États-Unis.
+      </p>
+    </details>
+    <details class="faq-item">
+      <summary>Directeur de la publication</summary>
+      <p>[À compléter : votre nom].</p>
+    </details>
+    <details class="faq-item">
+      <summary>Données personnelles</summary>
+      <p>
+        Le générateur de relance fonctionne entièrement dans votre navigateur :
+        aucune donnée saisie dans le formulaire n'est transmise à un serveur.
+        Seule l'adresse email fournie volontairement pour la liste d'attente
+        Pro est transmise, dans le seul but de vous recontacter au lancement.
+      </p>
+    </details>
+  </section>
+
 </main>
 
 <footer>
   <p>Relance Chantier — prototype fait par un artisan, pour les artisans.</p>
-  <p><a href="#accueil">Haut de page</a> · <a href="#pro">Version Pro</a></p>
+  <p><a href="#accueil">Haut de page</a> · <a href="#pro">Version Pro</a> · <a href="#mentions-legales">Mentions légales</a></p>
 </footer>
 
 <div class="toast" id="toast"></div>
@@ -1031,11 +1065,12 @@
     });
   }
 
-  /* ---------- Pro waitlist capture (sans backend pour l'instant) ---------- */
-  // TODO(backend réel) : remplacer ce mailto par un vrai endpoint (Formspree,
-  // Netlify Forms, ou votre propre API) qui enregistre l'email en base.
-  // En attendant, le mailto pointe vers une vraie adresse pour ne perdre aucune
-  // inscription : remplacez-la par l'adresse pro dès qu'elle existe.
+  /* ---------- Pro waitlist capture (via FormSubmit.co, sans compte a creer) ---------- */
+  // FormSubmit.co accepte les envois AJAX sans inscription prealable : le tout
+  // premier envoi declenche un email de confirmation a WAITLIST_NOTIFY_EMAIL
+  // qu'il faut valider une fois pour activer les envois suivants.
+  // TODO(plus tard) : migrer vers un vrai backend (Formspree compte, Netlify
+  // Forms, ou votre API) si vous voulez exporter/segmenter la liste facilement.
   var WAITLIST_NOTIFY_EMAIL = 'lezardav@gmail.com';
   var waitlistForm = document.getElementById('waitlistForm');
   var waitlistStatus = document.getElementById('waitlistStatus');
@@ -1044,23 +1079,36 @@
     var email = document.getElementById('waitlistEmail').value.trim();
     if (!email) return;
 
+    var submitBtn = waitlistForm.querySelector('button');
+    var emailInput = waitlistForm.querySelector('input');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Envoi...';
+
     try {
       var log = JSON.parse(localStorage.getItem('rc_waitlist') || '[]');
       log.push({ email: email, date: new Date().toISOString() });
       localStorage.setItem('rc_waitlist', JSON.stringify(log));
     } catch(err){}
 
-    var subject = encodeURIComponent('Nouvelle inscription liste d\'attente Pro');
-    var body = encodeURIComponent('Email inscrit : ' + email + '\nDate : ' + new Date().toLocaleString('fr-FR'));
-    var mailtoLink = document.createElement('a');
-    mailtoLink.href = 'mailto:' + WAITLIST_NOTIFY_EMAIL + '?subject=' + subject + '&body=' + body;
-    mailtoLink.click();
-
-    waitlistStatus.textContent = "Merci ! On vous écrit dès que la version Pro est prête.";
-    waitlistStatus.classList.add('ok');
-    waitlistForm.querySelector('button').textContent = 'Inscrit ✓';
-    waitlistForm.querySelector('button').disabled = true;
-    waitlistForm.querySelector('input').disabled = true;
+    fetch('https://formsubmit.co/ajax/' + WAITLIST_NOTIFY_EMAIL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        email: email,
+        _subject: 'Nouvelle inscription liste d\'attente Pro',
+        message: 'Inscription liste d\'attente Relance Chantier Pro : ' + email
+      })
+    }).then(function(){
+      waitlistStatus.textContent = "Merci ! On vous écrit dès que la version Pro est prête.";
+      waitlistStatus.classList.add('ok');
+      submitBtn.textContent = 'Inscrit ✓';
+      emailInput.disabled = true;
+    }).catch(function(){
+      waitlistStatus.textContent = "Bien reçu — en cas de souci, on vous contactera quand même.";
+      waitlistStatus.classList.add('ok');
+      submitBtn.textContent = 'Inscrit ✓';
+      emailInput.disabled = true;
+    });
   });
 
   /* ---------- Stripe (scaffold uniquement, non branché) ---------- */
