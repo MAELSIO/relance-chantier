@@ -1,0 +1,33 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="paperGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f3e9d4"/>
+      <stop offset="100%" stop-color="#e8dcc0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#paperGrad)"/>
+  <rect x="18" y="18" width="1164" height="594" fill="none" stroke="#2b2620" stroke-width="4"/>
+  <rect x="34" y="34" width="1132" height="562" fill="none" stroke="#c9b98d" stroke-width="2" stroke-dasharray="10 8"/>
+
+  <!-- brand mark -->
+  <g transform="translate(70,64) rotate(-4)">
+    <rect width="64" height="64" rx="12" fill="#d9531e"/>
+    <text x="32" y="45" font-size="34" text-anchor="middle" font-family="Arial, sans-serif">🔨</text>
+  </g>
+  <text x="150" y="100" font-family="Arial, sans-serif" font-size="34" font-weight="900" fill="#2b2620">Relance Chantier</text>
+
+  <!-- headline -->
+  <text x="70" y="240" font-family="Arial, sans-serif" font-size="58" font-weight="900" fill="#2b2620">Un client ne vous paie pas ?</text>
+  <text x="70" y="312" font-family="Arial, sans-serif" font-size="58" font-weight="900" fill="#d9531e">Generez votre relance</text>
+  <text x="70" y="384" font-family="Arial, sans-serif" font-size="58" font-weight="900" fill="#d9531e">en 30 secondes.</text>
+
+  <text x="70" y="440" font-family="Arial, sans-serif" font-size="26" fill="#55493a">Modele de lettre de relance gratuit pour artisans du batiment.</text>
+
+  <!-- stamp -->
+  <g transform="translate(985,470) rotate(-10)">
+    <rect x="-110" y="-40" width="220" height="80" rx="10" fill="none" stroke="#a92a25" stroke-width="5"/>
+    <text x="0" y="-4" font-family="'Courier New', monospace" font-size="26" font-weight="900" text-anchor="middle" fill="#a92a25">RELANCE</text>
+    <text x="0" y="28" font-family="'Courier New', monospace" font-size="20" font-weight="700" text-anchor="middle" fill="#a92a25">GRATUITE</text>
+  </g>
+</svg>
