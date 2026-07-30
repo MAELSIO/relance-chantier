@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://www.relance-chantier.fr/sitemap.xml
+Sitemap: https://www.relancechantier.fr/sitemap.xml
