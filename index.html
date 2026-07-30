@@ -426,6 +426,33 @@
   .copy-btn.copied{ background: var(--green-ok); box-shadow: 0 3px 0 #274a27; }
   .copy-btn:focus-visible{ outline: 2px dashed var(--ink); outline-offset:3px; }
 
+  .upsell-nudge{
+    display:flex; flex-wrap:wrap; align-items:center; gap: 10px 16px;
+    margin-top: 0; padding: 0 14px;
+    background: rgba(240,165,0,.14);
+    border: 1px dashed var(--yellow);
+    border-radius: 8px;
+    font-size: .88rem; color: var(--ink-soft);
+    max-height: 0; opacity: 0; overflow: hidden;
+    transition: max-height .4s ease, opacity .4s ease, padding .4s ease, margin-top .4s ease;
+  }
+  .upsell-nudge.show{
+    max-height: 120px; opacity: 1; padding: 12px 14px; margin-top: 14px;
+  }
+  .upsell-nudge strong{ color: var(--ink); }
+  .upsell-link{
+    font-weight: 800; color: var(--orange-dark); text-decoration: none;
+    white-space: nowrap;
+    border-bottom: 2px solid var(--orange-dark);
+  }
+  .upsell-link:hover{ color: var(--orange); border-color: var(--orange); }
+
+  @keyframes cardPulse{
+    0%, 100%{ box-shadow: 0 0 0 3px var(--yellow); }
+    50%{ box-shadow: 0 0 0 6px var(--yellow); }
+  }
+  .plan-card.pulse{ animation: cardPulse 0.6s ease 2; }
+
   /* ---------- pro section ---------- */
   .pro-section{
     background: var(--ink); color: var(--paper);
@@ -679,6 +706,10 @@
             <span aria-hidden="true">🖨️</span> Imprimer / PDF
           </button>
           <a class="btn btn-ghost" href="#pro" style="padding:11px 18px;">Envoyer automatiquement →</a>
+        </div>
+        <div class="upsell-nudge" id="upsellNudge">
+          <span>💡 <strong>La prochaine fois</strong>, plus besoin de copier-coller : Relance Chantier Pro l'envoie tout seul, aux bonnes dates.</span>
+          <a href="#pro" class="upsell-link" id="upsellLink">Voir l'offre Pro →</a>
         </div>
       </div>
     </div>
@@ -1030,7 +1061,15 @@
       btn.innerHTML = '<span aria-hidden="true">✓</span> Copié !';
       showToast('Message copié dans le presse-papier');
       setTimeout(function(){ btn.classList.remove('copied'); btn.innerHTML = original; }, 1800);
+      document.getElementById('upsellNudge').classList.add('show');
     });
+  });
+
+  document.getElementById('upsellLink').addEventListener('click', function(){
+    var card = document.getElementById('proCard');
+    card.classList.remove('pulse');
+    void card.offsetWidth;
+    card.classList.add('pulse');
   });
 
   document.getElementById('copyLinkBtn').addEventListener('click', function(){
@@ -1049,10 +1088,7 @@
     window.print();
   });
 
-  function copyText(text){
-    if (navigator.clipboard && window.isSecureContext){
-      return navigator.clipboard.writeText(text);
-    }
+  function fallbackCopy(text){
     return new Promise(function(resolve){
       var ta = document.createElement('textarea');
       ta.value = text;
@@ -1063,6 +1099,15 @@
       document.body.removeChild(ta);
       resolve();
     });
+  }
+
+  function copyText(text){
+    if (navigator.clipboard && window.isSecureContext){
+      return navigator.clipboard.writeText(text).catch(function(){
+        return fallbackCopy(text);
+      });
+    }
+    return fallbackCopy(text);
   }
 
   /* ---------- Pro waitlist capture (via FormSubmit.co, sans compte a creer) ---------- */
