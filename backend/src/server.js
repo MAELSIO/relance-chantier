@@ -1,20 +1,52 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const db = require('./db');
 const { hashPassword, verifyPassword, signToken, requireAuth } = require('./auth');
 const { startScheduler, runReminderSweep, FREE_AUTO_SEND_LIMIT } = require('./scheduler');
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ||
+  'https://www.relancechantier.fr,https://relancechantier.fr,https://maelsio.github.io'
+).split(',').map((s) => s.trim());
+
 const app = express();
-app.use(cors());
+app.use(helmet());
+app.use(cors({
+  origin: function (origin, callback) {
+    // Autorise les appels sans origine (curl, apps mobiles) et les origines connues,
+    // plus toujours localhost/file:// pour le développement local.
+    if (!origin || ALLOWED_ORIGINS.includes(origin) || origin.startsWith('http://localhost') || origin === 'null') {
+      return callback(null, true);
+    }
+    callback(new Error('Origine non autorisée : ' + origin));
+  }
+}));
 app.use(express.json());
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de tentatives, réessayez dans quelques minutes.' }
+});
 
 // ---------- Auth ----------
 
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/register', authLimiter, (req, res) => {
   const { email, password, artisanName } = req.body || {};
   if (!email || !password || !artisanName) {
     return res.status(400).json({ error: 'email, password et artisanName sont requis.' });
+  }
+  if (!EMAIL_RE.test(email)) {
+    return res.status(400).json({ error: "Adresse email invalide." });
+  }
+  if (String(password).length < 6) {
+    return res.status(400).json({ error: 'Le mot de passe doit faire au moins 6 caractères.' });
   }
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
   if (existing) {
@@ -28,8 +60,11 @@ app.post('/api/auth/register', (req, res) => {
   res.status(201).json({ token: signToken(user) });
 });
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', authLimiter, (req, res) => {
   const { email, password } = req.body || {};
+  if (!email || !password) {
+    return res.status(400).json({ error: 'email et password sont requis.' });
+  }
   const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
   if (!user || !verifyPassword(password, user.password_hash)) {
     return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
@@ -58,10 +93,23 @@ app.post('/api/invoices', requireAuth, (req, res) => {
   if (!clientName || !clientEmail || !amount || !dueDate) {
     return res.status(400).json({ error: 'clientName, clientEmail, amount et dueDate sont requis.' });
   }
+  if (!EMAIL_RE.test(clientEmail)) {
+    return res.status(400).json({ error: "Email du client invalide." });
+  }
+  const numAmount = Number(amount);
+  if (!Number.isFinite(numAmount) || numAmount <= 0) {
+    return res.status(400).json({ error: 'Le montant doit être un nombre positif.' });
+  }
+  if (isNaN(new Date(dueDate).getTime())) {
+    return res.status(400).json({ error: "Date d'échéance invalide." });
+  }
+  if (clientType && !['professionnel', 'particulier'].includes(clientType)) {
+    return res.status(400).json({ error: 'clientType doit être professionnel ou particulier.' });
+  }
   const info = db.prepare(
     `INSERT INTO invoices (user_id, client_name, client_email, invoice_number, amount, due_date, client_type)
      VALUES (?, ?, ?, ?, ?, ?, ?)`
-  ).run(req.userId, clientName, clientEmail, invoiceNumber || null, amount, dueDate, clientType || 'professionnel');
+  ).run(req.userId, clientName, clientEmail, invoiceNumber || null, numAmount, dueDate, clientType || 'professionnel');
   const invoice = db.prepare('SELECT * FROM invoices WHERE id = ?').get(info.lastInsertRowid);
   res.status(201).json(invoice);
 });

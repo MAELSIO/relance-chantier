@@ -136,6 +136,20 @@
 
   #screenAuth, #screenDashboard{ display:none; }
   #screenAuth.show, #screenDashboard.show{ display:block; }
+
+  .wake-banner{
+    display:none; align-items:center; gap:10px;
+    background: rgba(240,165,0,.15); border:1px solid var(--yellow);
+    border-radius: 8px; padding: 12px 16px; margin: 16px 0;
+    font-size:.85rem; color: var(--ink-soft);
+  }
+  .wake-banner.show{ display:flex; }
+  .spinner{
+    width:16px; height:16px; border-radius:50%; flex-shrink:0;
+    border:2px solid rgba(43,38,32,.25); border-top-color: var(--orange);
+    animation: rcSpin .7s linear infinite;
+  }
+  @keyframes rcSpin{ to{ transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -151,6 +165,11 @@
 </div>
 
 <main class="wrap">
+
+  <div class="wake-banner" id="wakeBanner">
+    <span class="spinner" aria-hidden="true"></span>
+    <span>Réveil du serveur en cours (le plan gratuit s'endort après une pause) — encore quelques secondes...</span>
+  </div>
 
   <div id="screenAuth">
     <h1>Espace Pro</h1>
@@ -277,12 +296,20 @@
     headers['Content-Type'] = 'application/json';
     var token = getToken();
     if (token) headers['Authorization'] = 'Bearer ' + token;
+
+    var wakeBanner = document.getElementById('wakeBanner');
+    var wakeTimer = setTimeout(function(){ wakeBanner.classList.add('show'); }, 2500);
+
     return fetch(API_BASE + path, Object.assign({}, options, { headers: headers }))
       .then(function(res){
         return res.json().then(function(data){
           if (!res.ok) throw new Error(data.error || 'Erreur inconnue');
           return data;
         });
+      })
+      .finally(function(){
+        clearTimeout(wakeTimer);
+        wakeBanner.classList.remove('show');
       });
   }
 
