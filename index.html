@@ -753,13 +753,20 @@
               <li>Alerte dès qu'un client a payé</li>
             </ul>
 
-            <form class="waitlist-form" id="waitlistForm" data-stripe-price="price_PRO_MONTHLY_PLACEHOLDER">
-              <label for="waitlistEmail" class="sr-only" style="position:absolute;left:-9999px;">Votre email</label>
-              <input type="email" id="waitlistEmail" name="email" placeholder="votre@email.fr" required>
-              <button type="submit" class="btn btn-primary">Être prévenu au lancement</button>
-            </form>
-            <p class="waitlist-status" id="waitlistStatus"></p>
-            <p class="micro-note">Aucun paiement pour l'instant — juste votre place réservée.</p>
+            <a href="pro/index.html" class="btn btn-primary" style="width:100%;">Essayer gratuitement (5 envois offerts) →</a>
+            <p class="micro-note">Compte gratuit, aucune carte bancaire demandée.</p>
+
+            <details style="margin-top:14px;">
+              <summary style="cursor:pointer; font-weight:700; font-size:.85rem; color:var(--orange-dark);">
+                Déjà utilisé vos 5 essais ? Soyez prévenu pour l'illimité à 15€/mois
+              </summary>
+              <form class="waitlist-form" id="waitlistForm" style="margin-top:10px;">
+                <label for="waitlistEmail" class="sr-only" style="position:absolute;left:-9999px;">Votre email</label>
+                <input type="email" id="waitlistEmail" name="email" placeholder="votre@email.fr" required>
+                <button type="submit" class="btn btn-ghost">Être prévenu</button>
+              </form>
+              <p class="waitlist-status" id="waitlistStatus"></p>
+            </details>
           </div>
         </div>
       </div>

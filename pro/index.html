@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espace Pro | Relance Chantier</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%23e8590c'/%3E%3Ctext x='50' y='68' font-size='58' text-anchor='middle' fill='white' font-family='Arial'%3E%F0%9F%94%A8%3C/text%3E%3C/svg%3E">
+
+<style>
+  :root{
+    --paper: #f3e9d4;
+    --paper-2: #ece0c6;
+    --paper-edge: #d8c9a3;
+    --ink: #2b2620;
+    --ink-soft: #55493a;
+    --line: #c9b98d;
+    --orange: #d9531e;
+    --orange-dark: #b74013;
+    --yellow: #f0a500;
+    --stamp-red: #a92a25;
+    --green-ok: #3f6b3f;
+    --shadow-paper: 0 1px 0 rgba(255,255,255,.5) inset, 0 18px 40px -18px rgba(43,38,32,.35);
+    --radius: 10px;
+    font-size: 16px;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0; min-height:100vh;
+    font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    color: var(--ink); background: var(--paper); line-height: 1.5;
+  }
+  a{ color: inherit; }
+  .wrap{ max-width: 880px; margin: 0 auto; padding: 0 20px; }
+
+  .topbar{
+    padding: 14px 0; border-bottom: 2px solid var(--ink);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .topbar .wrap{ display:flex; align-items:center; justify-content:space-between; width:100%; }
+  .brand{
+    display:flex; align-items:center; gap:8px; font-weight:800; text-decoration:none; color:var(--ink);
+  }
+  .brand-mark{
+    width: 30px; height:30px; border-radius: 7px; background: var(--orange); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:1rem;
+    box-shadow: 0 2px 0 var(--orange-dark); transform: rotate(-4deg);
+  }
+  .logout-btn{
+    background:none; border:2px solid var(--ink); border-radius:100px; padding:8px 14px;
+    font-weight:700; font-size:.82rem; cursor:pointer; display:none;
+  }
+
+  main{ padding: 36px 0 60px; }
+  h1{ font-size: 1.7rem; margin: 0 0 8px; font-weight:900; }
+  .sub{ color: var(--ink-soft); margin: 0 0 28px; }
+
+  .card{
+    background: var(--paper-2); border:1px solid var(--paper-edge); border-radius: var(--radius);
+    box-shadow: var(--shadow-paper); padding: 24px; margin-bottom: 24px;
+  }
+  .field{ margin-bottom:16px; }
+  .field label{ display:block; font-weight:700; font-size:.85rem; margin-bottom:6px; }
+  .field input, .field select{
+    width:100%; padding:11px 12px; font-size:1rem; border:2px solid var(--line); border-radius:6px;
+    background:#fffdf8; color:var(--ink); font-family:inherit;
+  }
+  .field input:focus, .field select:focus{ outline:none; border-color:var(--orange); }
+  .grid-2{ display:grid; grid-template-columns:1fr; gap:14px; }
+  @media (min-width:560px){ .grid-2{ grid-template-columns:1fr 1fr; } }
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding: 12px 20px; border-radius:8px; font-weight:800; font-size:.95rem;
+    border:none; cursor:pointer; text-decoration:none;
+  }
+  .btn-primary{ background:var(--orange); color:#fff; box-shadow:0 3px 0 var(--orange-dark); }
+  .btn-primary:active{ transform:translateY(2px); box-shadow:0 1px 0 var(--orange-dark); }
+  .btn-ghost{ background:transparent; color:var(--ink); border:2px solid var(--ink); }
+  .btn-danger{ background:transparent; color:var(--stamp-red); border:2px solid var(--stamp-red); padding:8px 14px; font-size:.82rem; }
+  .btn-block{ width:100%; }
+  .btn[disabled]{ opacity:.6; cursor:not-allowed; }
+
+  .msg{ font-size:.88rem; margin-top:10px; min-height:1.2em; }
+  .msg.error{ color: var(--stamp-red); font-weight:700; }
+  .msg.ok{ color: var(--green-ok); font-weight:700; }
+
+  .tabs{ display:flex; gap:8px; margin-bottom:20px; }
+  .tab-btn{
+    flex:1; padding:10px; border-radius:8px; border:2px solid var(--ink);
+    background:transparent; font-weight:800; cursor:pointer;
+  }
+  .tab-btn.active{ background:var(--ink); color:var(--paper); }
+
+  .account-bar{
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px;
+    background: var(--ink); color: var(--paper); border-radius: var(--radius);
+    padding: 16px 20px; margin-bottom: 24px;
+  }
+  .account-bar .name{ font-weight:800; }
+  .trial-pill{
+    background: rgba(243,233,212,.12); border:1px solid rgba(243,233,212,.3);
+    padding:6px 12px; border-radius:100px; font-size:.8rem; font-weight:700;
+  }
+  .trial-pill.full{ background: var(--stamp-red); border-color: var(--stamp-red); color:#fff; }
+
+  .invoice-card{
+    background:#fffdf8; border:1px solid var(--paper-edge); border-radius:8px;
+    padding:16px 18px; margin-bottom:12px;
+    display:flex; flex-wrap:wrap; align-items:center; gap:12px; justify-content:space-between;
+  }
+  .invoice-main{ min-width:200px; }
+  .invoice-client{ font-weight:800; }
+  .invoice-meta{ font-size:.82rem; color:var(--ink-soft); font-family:"Courier New",monospace; }
+  .badge{
+    display:inline-flex; align-items:center; padding:4px 10px; border-radius:100px;
+    font-size:.72rem; font-weight:800; text-transform:uppercase; letter-spacing:.03em;
+  }
+  .badge.unpaid{ background: rgba(217,83,30,.15); color: var(--orange-dark); }
+  .badge.paid{ background: rgba(63,107,63,.15); color: var(--green-ok); }
+  .badge.level0{ background: rgba(43,38,32,.08); color: var(--ink-soft); }
+  .badge.level1{ background: rgba(240,165,0,.18); color:#8a6200; }
+  .badge.level2{ background: rgba(217,83,30,.18); color: var(--orange-dark); }
+  .badge.level3{ background: rgba(169,42,37,.18); color: var(--stamp-red); }
+  .invoice-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  .invoice-actions .btn{ padding:8px 14px; font-size:.82rem; }
+
+  .empty-state{ color: var(--ink-soft); text-align:center; padding: 30px 0; }
+
+  .upgrade-card{
+    background: var(--ink); color: var(--paper); border-radius: var(--radius);
+    padding: 24px; text-align:center;
+  }
+  .upgrade-card h3{ margin:0 0 8px; }
+  .upgrade-card p{ color:#d8cdb8; margin:0 0 16px; }
+
+  #screenAuth, #screenDashboard{ display:none; }
+  #screenAuth.show, #screenDashboard.show{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap">
+    <a class="brand" href="../index.html#accueil">
+      <span class="brand-mark" aria-hidden="true">🔨</span>
+      Relance Chantier <span style="font-weight:600;">Pro</span>
+    </a>
+    <button class="logout-btn" id="logoutBtn" type="button">Se déconnecter</button>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <div id="screenAuth">
+    <h1>Espace Pro</h1>
+    <p class="sub">Connectez-vous, ou créez votre compte pour essayer les envois automatiques.</p>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tabLogin" type="button">Connexion</button>
+      <button class="tab-btn" id="tabRegister" type="button">Créer un compte</button>
+    </div>
+
+    <form class="card" id="loginForm">
+      <div class="field">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" required>
+      </div>
+      <div class="field">
+        <label for="loginPassword">Mot de passe</label>
+        <input type="password" id="loginPassword" required>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Se connecter</button>
+      <p class="msg" id="loginMsg"></p>
+    </form>
+
+    <form class="card" id="registerForm" style="display:none;">
+      <div class="field">
+        <label for="regName">Votre nom / entreprise</label>
+        <input type="text" id="regName" placeholder="Ex : Dubois Rénovation" required>
+      </div>
+      <div class="field">
+        <label for="regEmail">Email</label>
+        <input type="email" id="regEmail" required>
+      </div>
+      <div class="field">
+        <label for="regPassword">Mot de passe</label>
+        <input type="password" id="regPassword" minlength="6" required>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Créer mon compte gratuit</button>
+      <p class="msg" id="registerMsg"></p>
+    </form>
+  </div>
+
+  <div id="screenDashboard">
+    <div class="account-bar">
+      <span class="name" id="accountName"></span>
+      <span class="trial-pill" id="trialPill"></span>
+    </div>
+
+    <div class="card">
+      <h1 style="font-size:1.2rem;">Ajouter un client à relancer</h1>
+      <form id="invoiceForm">
+        <div class="grid-2">
+          <div class="field">
+            <label for="invClient">Nom du client</label>
+            <input type="text" id="invClient" placeholder="Ex : M. Kevin Le Gall" required>
+          </div>
+          <div class="field">
+            <label for="invEmail">Email du client</label>
+            <input type="email" id="invEmail" placeholder="kevin@example.fr" required>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="invNumber">Numéro de facture</label>
+            <input type="text" id="invNumber" placeholder="Ex : F2026-014">
+          </div>
+          <div class="field">
+            <label for="invAmount">Montant dû (€)</label>
+            <input type="number" id="invAmount" min="0" step="0.01" required>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="invDueDate">Date d'échéance</label>
+            <input type="date" id="invDueDate" required>
+          </div>
+          <div class="field">
+            <label for="invType">Type de client</label>
+            <select id="invType">
+              <option value="professionnel">Professionnel</option>
+              <option value="particulier">Particulier</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" type="submit">Ajouter et surveiller</button>
+        <p class="msg" id="invoiceMsg"></p>
+      </form>
+    </div>
+
+    <div class="card">
+      <h1 style="font-size:1.2rem;">Vos factures suivies</h1>
+      <div id="invoiceList"></div>
+      <p class="empty-state" id="emptyState" style="display:none;">
+        Aucune facture pour l'instant. Ajoutez-en une ci-dessus — Relance Chantier
+        surveille la date d'échéance et envoie les relances tout seul.
+      </p>
+    </div>
+
+    <div class="upgrade-card" id="upgradeCard">
+      <h3>Passer en illimité — 15€/mois</h3>
+      <p id="upgradeText">Débloquez l'envoi automatique illimité, au-delà des 5 essais gratuits.</p>
+      <button class="btn btn-ghost" style="border-color:rgba(243,233,212,.5); color:#fff;" id="upgradeBtn" type="button">
+        Être prévenu quand le paiement est ouvert
+      </button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  // TODO(déploiement) : remplacer par l'URL réelle une fois le backend
+  // déployé (ex : https://relance-chantier-api.onrender.com).
+  var API_BASE = localStorage.getItem('rc_api_base') || 'http://localhost:4000';
+
+  var TOKEN_KEY = 'rc_pro_token';
+
+  function getToken(){ return localStorage.getItem(TOKEN_KEY); }
+  function setToken(t){ localStorage.setItem(TOKEN_KEY, t); }
+  function clearToken(){ localStorage.removeItem(TOKEN_KEY); }
+
+  function api(path, options){
+    options = options || {};
+    var headers = options.headers || {};
+    headers['Content-Type'] = 'application/json';
+    var token = getToken();
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    return fetch(API_BASE + path, Object.assign({}, options, { headers: headers }))
+      .then(function(res){
+        return res.json().then(function(data){
+          if (!res.ok) throw new Error(data.error || 'Erreur inconnue');
+          return data;
+        });
+      });
+  }
+
+  function showScreen(name){
+    document.getElementById('screenAuth').classList.toggle('show', name === 'auth');
+    document.getElementById('screenDashboard').classList.toggle('show', name === 'dashboard');
+    document.getElementById('logoutBtn').style.display = name === 'dashboard' ? 'inline-flex' : 'none';
+  }
+
+  // ---------- Auth tabs ----------
+  var tabLogin = document.getElementById('tabLogin');
+  var tabRegister = document.getElementById('tabRegister');
+  var loginForm = document.getElementById('loginForm');
+  var registerForm = document.getElementById('registerForm');
+
+  tabLogin.addEventListener('click', function(){
+    tabLogin.classList.add('active'); tabRegister.classList.remove('active');
+    loginForm.style.display = 'block'; registerForm.style.display = 'none';
+  });
+  tabRegister.addEventListener('click', function(){
+    tabRegister.classList.add('active'); tabLogin.classList.remove('active');
+    registerForm.style.display = 'block'; loginForm.style.display = 'none';
+  });
+
+  loginForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var msg = document.getElementById('loginMsg');
+    msg.textContent = ''; msg.className = 'msg';
+    api('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: document.getElementById('loginEmail').value.trim(),
+        password: document.getElementById('loginPassword').value
+      })
+    }).then(function(data){
+      setToken(data.token);
+      loadDashboard();
+    }).catch(function(err){
+      msg.textContent = err.message; msg.className = 'msg error';
+    });
+  });
+
+  registerForm.addEventListener('submit', function(e){
+    e.preventDefault();
+    var msg = document.getElementById('registerMsg');
+    msg.textContent = ''; msg.className = 'msg';
+    api('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        artisanName: document.getElementById('regName').value.trim(),
+        email: document.getElementById('regEmail').value.trim(),
+        password: document.getElementById('regPassword').value
+      })
+    }).then(function(data){
+      setToken(data.token);
+      loadDashboard();
+    }).catch(function(err){
+      msg.textContent = err.message; msg.className = 'msg error';
+    });
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', function(){
+    clearToken();
+    showScreen('auth');
+  });
+
+  // ---------- Dashboard ----------
+  function daysLate(dueDate){
+    var d0 = new Date(dueDate); d0.setHours(0,0,0,0);
+    var d1 = new Date(); d1.setHours(0,0,0,0);
+    return Math.round((d1 - d0) / 86400000);
+  }
+  function fmtAmount(n){
+    return Number(n).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  }
+  function fmtDate(d){
+    return new Date(d).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' });
+  }
+  var LEVEL_LABEL = { 0: 'Pas encore relancé', 1: 'Relance amicale envoyée', 2: 'Relance ferme envoyée', 3: 'Mise en demeure envoyée' };
+
+  function renderInvoices(invoices){
+    var list = document.getElementById('invoiceList');
+    var empty = document.getElementById('emptyState');
+    list.innerHTML = '';
+    if (!invoices.length){ empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+
+    invoices.forEach(function(inv){
+      var late = daysLate(inv.due_date);
+      var card = document.createElement('div');
+      card.className = 'invoice-card';
+      card.innerHTML =
+        '<div class="invoice-main">' +
+          '<div class="invoice-client">' + inv.client_name + '</div>' +
+          '<div class="invoice-meta">' + fmtAmount(inv.amount) + ' · échéance ' + fmtDate(inv.due_date) +
+          (late > 0 ? ' · ' + late + 'j de retard' : '') + '</div>' +
+        '</div>' +
+        '<div>' +
+          '<span class="badge ' + inv.status + '">' + (inv.status === 'paid' ? 'Payée' : 'Impayée') + '</span> ' +
+          '<span class="badge level' + inv.last_reminder_level + '">' + LEVEL_LABEL[inv.last_reminder_level] + '</span>' +
+        '</div>' +
+        '<div class="invoice-actions"></div>';
+
+      var actions = card.querySelector('.invoice-actions');
+      if (inv.status !== 'paid'){
+        var payBtn = document.createElement('button');
+        payBtn.className = 'btn btn-ghost'; payBtn.type = 'button'; payBtn.textContent = 'Marquer payée';
+        payBtn.addEventListener('click', function(){
+          api('/api/invoices/' + inv.id + '/paid', { method: 'PATCH' }).then(loadInvoices);
+        });
+        actions.appendChild(payBtn);
+      }
+      var delBtn = document.createElement('button');
+      delBtn.className = 'btn btn-danger'; delBtn.type = 'button'; delBtn.textContent = 'Supprimer';
+      delBtn.addEventListener('click', function(){
+        if (!confirm('Supprimer cette facture suivie ?')) return;
+        api('/api/invoices/' + inv.id, { method: 'DELETE' }).then(loadInvoices);
+      });
+      actions.appendChild(delBtn);
+
+      list.appendChild(card);
+    });
+  }
+
+  function loadInvoices(){
+    return api('/api/invoices').then(renderInvoices);
+  }
+
+  function loadAccount(){
+    return api('/api/me').then(function(me){
+      document.getElementById('accountName').textContent = me.artisan_name;
+      var pill = document.getElementById('trialPill');
+      var full = me.plan === 'free' && me.auto_sends_used >= me.freeAutoSendLimit;
+      pill.textContent = me.plan === 'pro'
+        ? 'Pro · envois illimités'
+        : (me.auto_sends_used + ' / ' + me.freeAutoSendLimit + ' envois automatiques utilisés');
+      pill.classList.toggle('full', full);
+      document.getElementById('upgradeCard').style.display = me.plan === 'pro' ? 'none' : 'block';
+      if (me.plan !== 'pro'){
+        document.getElementById('upgradeText').textContent = full
+          ? "Vous avez utilisé vos 5 envois automatiques gratuits. L'abonnement Pro débloque l'envoi illimité."
+          : "Débloquez l'envoi automatique illimité, au-delà des " + me.freeAutoSendLimit + " essais gratuits.";
+      }
+    });
+  }
+
+  function loadDashboard(){
+    showScreen('dashboard');
+    Promise.all([loadAccount(), loadInvoices()]).catch(function(err){
+      if (String(err.message).indexOf('Session') !== -1 || String(err.message).indexOf('Authentification') !== -1){
+        clearToken();
+        showScreen('auth');
+      }
+    });
+  }
+
+  document.getElementById('invoiceForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var msg = document.getElementById('invoiceMsg');
+    msg.textContent = ''; msg.className = 'msg';
+    api('/api/invoices', {
+      method: 'POST',
+      body: JSON.stringify({
+        clientName: document.getElementById('invClient').value.trim(),
+        clientEmail: document.getElementById('invEmail').value.trim(),
+        invoiceNumber: document.getElementById('invNumber').value.trim(),
+        amount: parseFloat(document.getElementById('invAmount').value),
+        dueDate: document.getElementById('invDueDate').value,
+        clientType: document.getElementById('invType').value
+      })
+    }).then(function(){
+      document.getElementById('invoiceForm').reset();
+      msg.textContent = 'Client ajouté, surveillance activée.'; msg.className = 'msg ok';
+      loadInvoices();
+    }).catch(function(err){
+      msg.textContent = err.message; msg.className = 'msg error';
+    });
+  });
+
+  document.getElementById('upgradeBtn').addEventListener('click', function(){
+    window.location.href = '../index.html#pro';
+  });
+
+  // ---------- Boot ----------
+  if (getToken()){
+    loadDashboard();
+  } else {
+    showScreen('auth');
+  }
+})();
+</script>
+
+</body>
+</html>
