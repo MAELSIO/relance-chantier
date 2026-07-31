@@ -19,7 +19,9 @@ services:
         sync: false
       - key: SMTP_PASS
         sync: false
-    disk:
-      name: relance-chantier-data
-      mountPath: /opt/render/project/src/backend
-      sizeGB: 1
+    # Pas de disque persistant : indisponible sur le plan gratuit de Render.
+    # Consequence : la base SQLite est remise a zero a chaque redemarrage du
+    # service gratuit (inactivite ~15 min = mise en veille). Suffisant pour
+    # tester, pas pour de vrais clients qui comptent dessus dans la duree.
+    # Pour un stockage qui persiste vraiment, passer au plan payant "Starter"
+    # (~7$/mois) et reactiver un bloc "disk" ici (name, mountPath, sizeGB).
