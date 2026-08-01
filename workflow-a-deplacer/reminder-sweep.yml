@@ -1,0 +1,19 @@
+name: Declencher les relances automatiques
+
+on:
+  schedule:
+    # 7h UTC ~= 8h-9h heure de Paris selon l'heure d'ete/hiver.
+    - cron: '0 7 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  run-sweep:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reveiller le backend et lancer le passage des relances
+        run: |
+          curl -sS -X POST "https://relance-chantier-api.onrender.com/api/admin/run-sweep" \
+            -H "x-admin-key: ${{ secrets.RENDER_ADMIN_KEY }}" \
+            --max-time 90 \
+            --retry 3 --retry-delay 20 --retry-all-errors \
+            -w "\nHTTP %{http_code}\n"
