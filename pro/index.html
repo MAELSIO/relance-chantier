@@ -271,8 +271,9 @@
       <h3>Passer en illimité — 15€/mois</h3>
       <p id="upgradeText">Débloquez l'envoi automatique illimité, au-delà des 5 essais gratuits.</p>
       <button class="btn btn-ghost" style="border-color:rgba(243,233,212,.5); color:#fff;" id="upgradeBtn" type="button">
-        Être prévenu quand le paiement est ouvert
+        S'abonner — 15€/mois
       </button>
+      <p class="msg" id="upgradeMsg"></p>
     </div>
   </div>
 
@@ -490,8 +491,41 @@
   });
 
   document.getElementById('upgradeBtn').addEventListener('click', function(){
-    window.location.href = '../index.html#pro';
+    var btn = this;
+    var msg = document.getElementById('upgradeMsg');
+    msg.textContent = ''; msg.className = 'msg';
+    btn.disabled = true;
+    btn.textContent = 'Redirection...';
+    api('/api/billing/create-checkout-session', { method: 'POST' })
+      .then(function(data){
+        window.location.href = data.url;
+      })
+      .catch(function(err){
+        msg.textContent = err.message; msg.className = 'msg error';
+        btn.disabled = false;
+        btn.textContent = "S'abonner — 15€/mois";
+      });
   });
+
+  // Retour depuis Stripe Checkout
+  (function(){
+    var params = new URLSearchParams(window.location.search);
+    var status = params.get('abonnement');
+    if (status === 'succes'){
+      setTimeout(function(){
+        var msg = document.getElementById('upgradeMsg');
+        if (msg){ msg.textContent = 'Abonnement activé, merci ! Rechargement...'; msg.className = 'msg ok'; }
+      }, 0);
+      // Stripe peut mettre quelques secondes à notifier notre serveur (webhook) :
+      // on relance /api/me une fois après un court délai pour rafraîchir le statut.
+      setTimeout(function(){ if (getToken()) loadAccount(); }, 3000);
+    } else if (status === 'annule'){
+      setTimeout(function(){
+        var msg = document.getElementById('upgradeMsg');
+        if (msg){ msg.textContent = "Abonnement annulé, aucun paiement effectué."; msg.className = 'msg'; }
+      }, 0);
+    }
+  })();
 
   // ---------- Boot ----------
   if (getToken()){

@@ -12,6 +12,8 @@ db.exec(`
     artisan_name TEXT NOT NULL,
     plan TEXT NOT NULL DEFAULT 'free',
     auto_sends_used INTEGER NOT NULL DEFAULT 0,
+    stripe_customer_id TEXT,
+    stripe_subscription_id TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
@@ -38,5 +40,17 @@ db.exec(`
     email_status TEXT NOT NULL
   );
 `);
+
+// Migrations legeres pour les bases deja existantes (CREATE TABLE IF NOT EXISTS
+// ne modifie pas un schema deja cree, donc on ajoute les colonnes manquantes ici).
+function ensureColumn(table, column, definition) {
+  const existing = db.prepare(`PRAGMA table_info(${table})`).all();
+  const hasColumn = existing.some((c) => c.name === column);
+  if (!hasColumn) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+  }
+}
+ensureColumn('users', 'stripe_customer_id', 'TEXT');
+ensureColumn('users', 'stripe_subscription_id', 'TEXT');
 
 module.exports = db;

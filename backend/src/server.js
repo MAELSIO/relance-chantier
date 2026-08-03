@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const db = require('./db');
 const { hashPassword, verifyPassword, signToken, requireAuth } = require('./auth');
 const { startScheduler, runReminderSweep, FREE_AUTO_SEND_LIMIT } = require('./scheduler');
+const { createCheckoutSession, verifyWebhook } = require('./billing');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -25,6 +26,35 @@ app.use(cors({
     callback(new Error('Origine non autorisée : ' + origin));
   }
 }));
+
+// Webhook Stripe : doit lire le corps brut (avant express.json()) pour verifier la signature.
+app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+  let event;
+  try {
+    event = verifyWebhook(req.body, req.headers['stripe-signature']);
+  } catch (err) {
+    return res.status(400).send('Webhook signature invalide: ' + err.message);
+  }
+
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    const userId = session.metadata && session.metadata.userId;
+    if (userId) {
+      db.prepare(
+        "UPDATE users SET plan = 'pro', stripe_customer_id = ?, stripe_subscription_id = ? WHERE id = ?"
+      ).run(session.customer, session.subscription, userId);
+    }
+  } else if (event.type === 'customer.subscription.deleted' || event.type === 'customer.subscription.updated') {
+    const sub = event.data.object;
+    const isActive = sub.status === 'active' || sub.status === 'trialing';
+    db.prepare(
+      "UPDATE users SET plan = ? WHERE stripe_subscription_id = ?"
+    ).run(isActive ? 'pro' : 'free', sub.id);
+  }
+
+  res.json({ received: true });
+});
+
 app.use(express.json());
 
 const authLimiter = rateLimit({
@@ -77,6 +107,27 @@ app.get('/api/me', requireAuth, (req, res) => {
     'SELECT id, email, artisan_name, plan, auto_sends_used FROM users WHERE id = ?'
   ).get(req.userId);
   res.json({ ...user, freeAutoSendLimit: FREE_AUTO_SEND_LIMIT });
+});
+
+// ---------- Facturation (Stripe) ----------
+
+app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) => {
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
+  if (!process.env.STRIPE_PRICE_ID) {
+    return res.status(503).json({ error: "L'abonnement n'est pas encore disponible." });
+  }
+  try {
+    const origin = req.headers.origin || 'https://www.relancechantier.fr';
+    const session = await createCheckoutSession({
+      user,
+      priceId: process.env.STRIPE_PRICE_ID,
+      successUrl: origin + '/pro/?abonnement=succes',
+      cancelUrl: origin + '/pro/?abonnement=annule'
+    });
+    res.json({ url: session.url });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ---------- Invoices / clients ----------
