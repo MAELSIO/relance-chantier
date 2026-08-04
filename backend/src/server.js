@@ -15,6 +15,10 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ||
 ).split(',').map((s) => s.trim());
 
 const app = express();
+// Render (et la plupart des hebergeurs) placent l'appli derriere un proxy inverse.
+// Sans ceci, express-rate-limit rejette la presence de X-Forwarded-For avec une
+// ValidationError non rattrapee qui fait planter le process a chaque requete.
+app.set('trust proxy', 1);
 app.use(helmet());
 app.use(cors({
   origin: function (origin, callback) {
