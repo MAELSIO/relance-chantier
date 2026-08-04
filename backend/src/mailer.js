@@ -37,12 +37,18 @@ async function getTransporter() {
   if (transporter && cachedTransporterKey === key) return transporter;
 
   const ipv4Address = await resolveIPv4Host(smtpHost);
+  const port = Number(process.env.SMTP_PORT || 465);
+  // Port 465 = TLS immediat. Port 587 (ou tout autre) = connexion en clair
+  // puis mise a niveau STARTTLS - souvent le seul port SMTP sortant autorise
+  // par les hebergeurs qui bloquent le 465.
+  const secure = port === 465;
 
   transporter = nodemailer.createTransport({
     host: ipv4Address,
     servername: smtpHost,
-    port: Number(process.env.SMTP_PORT || 465),
-    secure: true,
+    port,
+    secure,
+    requireTLS: !secure,
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS
