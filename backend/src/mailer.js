@@ -1,9 +1,3 @@
-const nodemailer = require('nodemailer');
-const dns = require('dns').promises;
-
-let cachedTransporterKey = null;
-let transporter = null;
-
 function withTimeout(promise, ms, message) {
   return Promise.race([
     promise,
@@ -12,74 +6,41 @@ function withTimeout(promise, ms, message) {
 }
 
 /**
- * Certaines plateformes annoncent une route IPv6 qui n'est en realite pas
- * routee, ce qui fait echouer la connexion SMTP avec ENETUNREACH une fois
- * sur deux (nodemailer choisit une adresse au hasard parmi IPv4 et IPv6).
- * On resout nous-memes une adresse IPv4 et on la passe en `host`, avec le
- * nom d'origine en `servername` pour que le SNI/certificat TLS restent corrects.
+ * Envoie via l'API HTTPS de Resend plutot que par SMTP direct : les hebergeurs
+ * gratuits (Render notamment) bloquent le SMTP sortant pour lutter contre le
+ * spam, mais une simple requete HTTPS n'est jamais bloquee.
  */
-async function resolveIPv4Host(hostname) {
-  try {
-    const { address } = await dns.lookup(hostname, { family: 4 });
-    return address;
-  } catch (err) {
-    return hostname;
-  }
-}
-
-async function getTransporter() {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    return null;
-  }
-
-  const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const key = `${smtpHost}:${process.env.SMTP_USER}`;
-  if (transporter && cachedTransporterKey === key) return transporter;
-
-  const ipv4Address = await resolveIPv4Host(smtpHost);
-  const port = Number(process.env.SMTP_PORT || 465);
-  // Port 465 = TLS immediat. Port 587 (ou tout autre) = connexion en clair
-  // puis mise a niveau STARTTLS - souvent le seul port SMTP sortant autorise
-  // par les hebergeurs qui bloquent le 465.
-  const secure = port === 465;
-
-  transporter = nodemailer.createTransport({
-    host: ipv4Address,
-    servername: smtpHost,
-    port,
-    secure,
-    requireTLS: !secure,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    },
-    // Sans ces timeouts, un hebergeur qui bloque/ralentit le port SMTP sortant
-    // (frequent sur les plans gratuits) fait rester la requete bloquee indefiniment
-    // au lieu d'echouer proprement.
-    connectionTimeout: 15000,
-    greetingTimeout: 15000,
-    socketTimeout: 20000
-  });
-  cachedTransporterKey = key;
-  return transporter;
-}
-
 async function sendReminderEmail({ to, subject, body, fromName }) {
-  const t = await getTransporter();
-  if (!t) {
-    return { ok: false, reason: 'SMTP non configuré (SMTP_USER / SMTP_PASS manquants dans .env)' };
+  if (!process.env.RESEND_API_KEY) {
+    return { ok: false, reason: 'RESEND_API_KEY manquante : envoi non configuré.' };
   }
+
+  const from = process.env.RESEND_FROM || 'Relance Chantier <onboarding@resend.dev>';
+
   try {
-    await withTimeout(
-      t.sendMail({
-        from: `"${fromName}" <${process.env.SMTP_USER}>`,
-        to,
-        subject,
-        text: body
+    const res = await withTimeout(
+      fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from,
+          to: [to],
+          subject,
+          text: body,
+          reply_to: process.env.RESEND_REPLY_TO || undefined
+        })
       }),
-      25000,
-      "Timeout : le serveur SMTP n'a pas repondu a temps."
+      15000,
+      "Timeout : l'API Resend n'a pas repondu a temps."
     );
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return { ok: false, reason: `Resend ${res.status}: ${data.message || res.statusText}` };
+    }
     return { ok: true };
   } catch (err) {
     return { ok: false, reason: err.message };
