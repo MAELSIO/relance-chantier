@@ -18,6 +18,7 @@ async function createCheckoutSession({ user, priceId, successUrl, cancelUrl }) {
     success_url: successUrl,
     cancel_url: cancelUrl,
     allow_promotion_codes: true,
+    payment_method_collection: 'if_required',
     metadata: { userId: String(user.id) }
   });
   return session;
