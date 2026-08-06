@@ -118,6 +118,11 @@ app.get('/api/me', requireAuth, async (req, res) => {
   res.json({ ...rows[0], freeAutoSendLimit: FREE_AUTO_SEND_LIMIT });
 });
 
+app.delete('/api/me', requireAuth, async (req, res) => {
+  await db.query('DELETE FROM users WHERE id = $1', [req.userId]);
+  res.json({ ok: true });
+});
+
 // ---------- Facturation (Stripe) ----------
 
 app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) => {
