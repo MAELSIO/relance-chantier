@@ -32,7 +32,7 @@ app.use(cors({
 }));
 
 // Webhook Stripe : doit lire le corps brut (avant express.json()) pour verifier la signature.
-app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   let event;
   try {
     event = verifyWebhook(req.body, req.headers['stripe-signature']);
@@ -44,16 +44,18 @@ app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), (req
     const session = event.data.object;
     const userId = session.metadata && session.metadata.userId;
     if (userId) {
-      db.prepare(
-        "UPDATE users SET plan = 'pro', stripe_customer_id = ?, stripe_subscription_id = ? WHERE id = ?"
-      ).run(session.customer, session.subscription, userId);
+      await db.query(
+        "UPDATE users SET plan = 'pro', stripe_customer_id = $1, stripe_subscription_id = $2 WHERE id = $3",
+        [session.customer, session.subscription, userId]
+      );
     }
   } else if (event.type === 'customer.subscription.deleted' || event.type === 'customer.subscription.updated') {
     const sub = event.data.object;
     const isActive = sub.status === 'active' || sub.status === 'trialing';
-    db.prepare(
-      "UPDATE users SET plan = ? WHERE stripe_subscription_id = ?"
-    ).run(isActive ? 'pro' : 'free', sub.id);
+    await db.query(
+      'UPDATE users SET plan = $1 WHERE stripe_subscription_id = $2',
+      [isActive ? 'pro' : 'free', sub.id]
+    );
   }
 
   res.json({ received: true });
@@ -71,7 +73,7 @@ const authLimiter = rateLimit({
 
 // ---------- Auth ----------
 
-app.post('/api/auth/register', authLimiter, (req, res) => {
+app.post('/api/auth/register', authLimiter, async (req, res) => {
   const { email, password, artisanName } = req.body || {};
   if (!email || !password || !artisanName) {
     return res.status(400).json({ error: 'email, password et artisanName sont requis.' });
@@ -82,41 +84,45 @@ app.post('/api/auth/register', authLimiter, (req, res) => {
   if (String(password).length < 6) {
     return res.status(400).json({ error: 'Le mot de passe doit faire au moins 6 caractères.' });
   }
-  const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
-  if (existing) {
+  const { rows: existingRows } = await db.query('SELECT id FROM users WHERE email = $1', [email]);
+  if (existingRows[0]) {
     return res.status(409).json({ error: 'Un compte existe déjà avec cet email.' });
   }
   const passwordHash = hashPassword(password);
-  const info = db.prepare(
-    'INSERT INTO users (email, password_hash, artisan_name) VALUES (?, ?, ?)'
-  ).run(email, passwordHash, artisanName);
-  const user = { id: info.lastInsertRowid, email };
+  const { rows } = await db.query(
+    'INSERT INTO users (email, password_hash, artisan_name) VALUES ($1, $2, $3) RETURNING id',
+    [email, passwordHash, artisanName]
+  );
+  const user = { id: rows[0].id, email };
   res.status(201).json({ token: signToken(user) });
 });
 
-app.post('/api/auth/login', authLimiter, (req, res) => {
+app.post('/api/auth/login', authLimiter, async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) {
     return res.status(400).json({ error: 'email et password sont requis.' });
   }
-  const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+  const { rows } = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+  const user = rows[0];
   if (!user || !verifyPassword(password, user.password_hash)) {
     return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
   }
   res.json({ token: signToken(user) });
 });
 
-app.get('/api/me', requireAuth, (req, res) => {
-  const user = db.prepare(
-    'SELECT id, email, artisan_name, plan, auto_sends_used FROM users WHERE id = ?'
-  ).get(req.userId);
-  res.json({ ...user, freeAutoSendLimit: FREE_AUTO_SEND_LIMIT });
+app.get('/api/me', requireAuth, async (req, res) => {
+  const { rows } = await db.query(
+    'SELECT id, email, artisan_name, plan, auto_sends_used FROM users WHERE id = $1',
+    [req.userId]
+  );
+  res.json({ ...rows[0], freeAutoSendLimit: FREE_AUTO_SEND_LIMIT });
 });
 
 // ---------- Facturation (Stripe) ----------
 
 app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) => {
-  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.userId);
+  const { rows } = await db.query('SELECT * FROM users WHERE id = $1', [req.userId]);
+  const user = rows[0];
   if (!process.env.STRIPE_PRICE_ID) {
     return res.status(503).json({ error: "L'abonnement n'est pas encore disponible." });
   }
@@ -136,14 +142,15 @@ app.post('/api/billing/create-checkout-session', requireAuth, async (req, res) =
 
 // ---------- Invoices / clients ----------
 
-app.get('/api/invoices', requireAuth, (req, res) => {
-  const invoices = db.prepare(
-    'SELECT * FROM invoices WHERE user_id = ? ORDER BY due_date ASC'
-  ).all(req.userId);
-  res.json(invoices);
+app.get('/api/invoices', requireAuth, async (req, res) => {
+  const { rows } = await db.query(
+    'SELECT * FROM invoices WHERE user_id = $1 ORDER BY due_date ASC',
+    [req.userId]
+  );
+  res.json(rows);
 });
 
-app.post('/api/invoices', requireAuth, (req, res) => {
+app.post('/api/invoices', requireAuth, async (req, res) => {
   const { clientName, clientEmail, invoiceNumber, amount, dueDate, clientType } = req.body || {};
   if (!clientName || !clientEmail || !amount || !dueDate) {
     return res.status(400).json({ error: 'clientName, clientEmail, amount et dueDate sont requis.' });
@@ -161,41 +168,48 @@ app.post('/api/invoices', requireAuth, (req, res) => {
   if (clientType && !['professionnel', 'particulier'].includes(clientType)) {
     return res.status(400).json({ error: 'clientType doit être professionnel ou particulier.' });
   }
-  const info = db.prepare(
+  const { rows } = await db.query(
     `INSERT INTO invoices (user_id, client_name, client_email, invoice_number, amount, due_date, client_type)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
-  ).run(req.userId, clientName, clientEmail, invoiceNumber || null, numAmount, dueDate, clientType || 'professionnel');
-  const invoice = db.prepare('SELECT * FROM invoices WHERE id = ?').get(info.lastInsertRowid);
-  res.status(201).json(invoice);
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+    [req.userId, clientName, clientEmail, invoiceNumber || null, numAmount, dueDate, clientType || 'professionnel']
+  );
+  res.status(201).json(rows[0]);
 });
 
-app.patch('/api/invoices/:id/paid', requireAuth, (req, res) => {
-  const invoice = db.prepare(
-    'SELECT * FROM invoices WHERE id = ? AND user_id = ?'
-  ).get(req.params.id, req.userId);
+app.patch('/api/invoices/:id/paid', requireAuth, async (req, res) => {
+  const { rows } = await db.query(
+    'SELECT * FROM invoices WHERE id = $1 AND user_id = $2',
+    [req.params.id, req.userId]
+  );
+  const invoice = rows[0];
   if (!invoice) return res.status(404).json({ error: 'Facture introuvable.' });
-  db.prepare("UPDATE invoices SET status = 'paid' WHERE id = ?").run(invoice.id);
+  await db.query("UPDATE invoices SET status = 'paid' WHERE id = $1", [invoice.id]);
   res.json({ ok: true });
 });
 
-app.delete('/api/invoices/:id', requireAuth, (req, res) => {
-  const invoice = db.prepare(
-    'SELECT * FROM invoices WHERE id = ? AND user_id = ?'
-  ).get(req.params.id, req.userId);
+app.delete('/api/invoices/:id', requireAuth, async (req, res) => {
+  const { rows } = await db.query(
+    'SELECT * FROM invoices WHERE id = $1 AND user_id = $2',
+    [req.params.id, req.userId]
+  );
+  const invoice = rows[0];
   if (!invoice) return res.status(404).json({ error: 'Facture introuvable.' });
-  db.prepare('DELETE FROM invoices WHERE id = ?').run(invoice.id);
+  await db.query('DELETE FROM invoices WHERE id = $1', [invoice.id]);
   res.json({ ok: true });
 });
 
-app.get('/api/invoices/:id/reminders', requireAuth, (req, res) => {
-  const invoice = db.prepare(
-    'SELECT * FROM invoices WHERE id = ? AND user_id = ?'
-  ).get(req.params.id, req.userId);
+app.get('/api/invoices/:id/reminders', requireAuth, async (req, res) => {
+  const { rows } = await db.query(
+    'SELECT * FROM invoices WHERE id = $1 AND user_id = $2',
+    [req.params.id, req.userId]
+  );
+  const invoice = rows[0];
   if (!invoice) return res.status(404).json({ error: 'Facture introuvable.' });
-  const log = db.prepare(
-    'SELECT * FROM reminder_log WHERE invoice_id = ? ORDER BY sent_at DESC'
-  ).all(invoice.id);
-  res.json(log);
+  const log = await db.query(
+    'SELECT * FROM reminder_log WHERE invoice_id = $1 ORDER BY sent_at DESC',
+    [invoice.id]
+  );
+  res.json(log.rows);
 });
 
 // ---------- Manual trigger (testing / admin) ----------
@@ -209,6 +223,14 @@ app.post('/api/admin/run-sweep', async (req, res) => {
 });
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
+
+// Filet de securite : toute erreur non geree dans une route (y compris une
+// requete Postgres qui echoue) renvoie du JSON plutot que de planter le
+// process ou de renvoyer la page d'erreur HTML par defaut d'Express.
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ error: 'Erreur serveur.' });
+});
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

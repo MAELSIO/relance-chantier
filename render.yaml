@@ -7,6 +7,8 @@ services:
     buildCommand: npm install
     startCommand: npm start
     envVars:
+      - key: DATABASE_URL
+        sync: false
       - key: JWT_SECRET
         generateValue: true
       - key: ADMIN_KEY
@@ -19,9 +21,9 @@ services:
         sync: false
       - key: SMTP_PASS
         sync: false
-    # Pas de disque persistant : indisponible sur le plan gratuit de Render.
-    # Consequence : la base SQLite est remise a zero a chaque redemarrage du
-    # service gratuit (inactivite ~15 min = mise en veille). Suffisant pour
-    # tester, pas pour de vrais clients qui comptent dessus dans la duree.
-    # Pour un stockage qui persiste vraiment, passer au plan payant "Starter"
-    # (~7$/mois) et reactiver un bloc "disk" ici (name, mountPath, sizeGB).
+    # Les donnees vivent dans Postgres (Supabase), pas sur le disque de Render.
+    # Ca resout la perte de donnees du plan gratuit : ce disque etait remis a
+    # zero a chaque redemarrage du service (mise en veille apres ~15 min
+    # d'inactivite), et la base SQLite qui y vivait disparaissait avec lui.
+    # Supabase est externe et persiste independamment du cycle de vie du
+    # service Render, donc aucun disque persistant n'est necessaire ici.

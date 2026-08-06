@@ -17,13 +17,14 @@ function nextLevelDue(invoice) {
 }
 
 async function runReminderSweep() {
-  const users = db.prepare('SELECT * FROM users').all();
+  const { rows: users } = await db.query('SELECT * FROM users');
   const results = [];
 
   for (const user of users) {
-    const invoices = db.prepare(
-      "SELECT * FROM invoices WHERE user_id = ? AND status = 'unpaid'"
-    ).all(user.id);
+    const { rows: invoices } = await db.query(
+      "SELECT * FROM invoices WHERE user_id = $1 AND status = 'unpaid'",
+      [user.id]
+    );
 
     for (const invoice of invoices) {
       const level = nextLevelDue(invoice);
@@ -52,17 +53,20 @@ async function runReminderSweep() {
         fromName: user.artisan_name
       });
 
-      db.prepare(
-        'INSERT INTO reminder_log (invoice_id, level, email_status) VALUES (?, ?, ?)'
-      ).run(invoice.id, level, sendResult.ok ? 'sent' : 'failed: ' + sendResult.reason);
+      await db.query(
+        'INSERT INTO reminder_log (invoice_id, level, email_status) VALUES ($1, $2, $3)',
+        [invoice.id, level, sendResult.ok ? 'sent' : 'failed: ' + sendResult.reason]
+      );
 
       if (sendResult.ok) {
-        db.prepare(
-          "UPDATE invoices SET last_reminder_level = ?, last_reminder_sent_at = datetime('now') WHERE id = ?"
-        ).run(level, invoice.id);
-        db.prepare(
-          'UPDATE users SET auto_sends_used = auto_sends_used + 1 WHERE id = ?'
-        ).run(user.id);
+        await db.query(
+          "UPDATE invoices SET last_reminder_level = $1, last_reminder_sent_at = now()::text WHERE id = $2",
+          [level, invoice.id]
+        );
+        await db.query(
+          'UPDATE users SET auto_sends_used = auto_sends_used + 1 WHERE id = $1',
+          [user.id]
+        );
       }
 
       results.push({ invoiceId: invoice.id, level, sent: sendResult.ok, reason: sendResult.reason });

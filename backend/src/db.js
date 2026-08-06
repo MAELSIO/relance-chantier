@@ -1,56 +1,25 @@
-const { DatabaseSync } = require('node:sqlite');
-const path = require('path');
+const { Pool } = require('pg');
 
-const dbPath = path.join(__dirname, '..', 'data.sqlite');
-const db = new DatabaseSync(dbPath);
-
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    artisan_name TEXT NOT NULL,
-    plan TEXT NOT NULL DEFAULT 'free',
-    auto_sends_used INTEGER NOT NULL DEFAULT 0,
-    stripe_customer_id TEXT,
-    stripe_subscription_id TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    'DATABASE_URL manquante : renseignez la chaine de connexion Postgres (Supabase) dans .env.'
   );
-
-  CREATE TABLE IF NOT EXISTS invoices (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    client_name TEXT NOT NULL,
-    client_email TEXT NOT NULL,
-    invoice_number TEXT,
-    amount REAL NOT NULL,
-    due_date TEXT NOT NULL,
-    client_type TEXT NOT NULL DEFAULT 'professionnel',
-    status TEXT NOT NULL DEFAULT 'unpaid',
-    last_reminder_level INTEGER NOT NULL DEFAULT 0,
-    last_reminder_sent_at TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS reminder_log (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    invoice_id INTEGER NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
-    level INTEGER NOT NULL,
-    sent_at TEXT NOT NULL DEFAULT (datetime('now')),
-    email_status TEXT NOT NULL
-  );
-`);
-
-// Migrations legeres pour les bases deja existantes (CREATE TABLE IF NOT EXISTS
-// ne modifie pas un schema deja cree, donc on ajoute les colonnes manquantes ici).
-function ensureColumn(table, column, definition) {
-  const existing = db.prepare(`PRAGMA table_info(${table})`).all();
-  const hasColumn = existing.some((c) => c.name === column);
-  if (!hasColumn) {
-    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
-  }
 }
-ensureColumn('users', 'stripe_customer_id', 'TEXT');
-ensureColumn('users', 'stripe_subscription_id', 'TEXT');
 
-module.exports = db;
+// Supabase exige une connexion TLS ; le certificat n'a pas besoin d'etre
+// verifie ici (pas de donnees sensibles au niveau reseau local/hebergeur).
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
+
+// Les tables vivent maintenant dans une vraie base Postgres (Supabase), plus
+// dans un fichier SQLite sur le disque de l'hebergeur. Sur le plan gratuit de
+// Render, ce disque est efface a chaque redemarrage du service (mise en veille
+// apres ~15 min d'inactivite) : c'etait la cause de la disparition des donnees.
+// Voir schema.sql pour la structure des tables.
+async function query(text, params) {
+  return pool.query(text, params);
+}
+
+module.exports = { query, pool };
