@@ -6,7 +6,7 @@ const rateLimit = require('express-rate-limit');
 const db = require('./db');
 const { hashPassword, verifyPassword, signToken, requireAuth } = require('./auth');
 const { startScheduler, runReminderSweep, FREE_AUTO_SEND_LIMIT } = require('./scheduler');
-const { createCheckoutSession, verifyWebhook } = require('./billing');
+const { createCheckoutSession, verifyWebhook, getStripe } = require('./billing');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -119,6 +119,19 @@ app.get('/api/me', requireAuth, async (req, res) => {
 });
 
 app.delete('/api/me', requireAuth, async (req, res) => {
+  const { rows } = await db.query(
+    'SELECT stripe_subscription_id FROM users WHERE id = $1',
+    [req.userId]
+  );
+  const subscriptionId = rows[0] && rows[0].stripe_subscription_id;
+  if (subscriptionId) {
+    const stripe = getStripe();
+    if (stripe) {
+      // Resilie l'abonnement Stripe avant de supprimer le compte : sinon
+      // le client continuerait a etre facture sans plus pouvoir se connecter.
+      await stripe.subscriptions.cancel(subscriptionId).catch(() => {});
+    }
+  }
   await db.query('DELETE FROM users WHERE id = $1', [req.userId]);
   res.json({ ok: true });
 });
