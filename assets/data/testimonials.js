@@ -45,4 +45,24 @@
    une ville ou une note. Un tableau vide masque simplement la section —
    c'est très bien en attendant d'avoir de vrais retours.
    ========================================================= */
-window.RC_TESTIMONIALS = [];
+window.RC_TESTIMONIALS = [
+  {
+    prenom: "Emma Rouault",
+    role: "Conductrice de travaux",
+    ville: "Toulouse",
+    citation: "J'oubliais des relances, je m'y mettais le soir, et je découvrais des retards à 30j, souvent trop tard. Aujourd'hui à l'ouverture, je vois tout de suite mes alertes d'impayés.",
+    dateAjout: "2026-08-16"
+  },
+  {
+    prenom: "Sofiane Akrich",
+    role: "Plombier",
+    ville: "Marseille",
+    citation: "Je vois tout de suite qui relancer. J'utilise courtoisie → avertissement → mise en demeure : les modèles d'e-mail sont prêts, je personnalise et j'envoie.",
+    dateAjout: "2026-08-16"
+  },
+  {
+    prenom: "Valérie Lesa",
+    citation: "Relance Chantier me donne une \"bouffée d'air\" ! Un vrai gain de temps !!!",
+    dateAjout: "2026-08-16"
+  }
+];
