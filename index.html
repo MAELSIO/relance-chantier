@@ -227,6 +227,27 @@
   .story p:last-child{ margin-bottom:0; }
   .story .signature{ font-size:.9rem; color: var(--ink-soft); font-style: italic; }
 
+  .founder-card{
+    display:flex; gap:18px; align-items:flex-start;
+    background: var(--paper-2);
+    border: 1px solid var(--paper-edge);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-paper);
+    padding: 24px clamp(18px, 4vw, 32px);
+  }
+  .founder-avatar{
+    flex-shrink:0; width: 52px; height:52px; border-radius:50%;
+    background: var(--orange); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:900; font-size:1.3rem;
+    box-shadow: 0 3px 0 var(--orange-dark);
+  }
+  .founder-quote{ margin:0 0 10px; font-style:italic; color: var(--ink); }
+  .founder-signature{ margin:0; font-size:.88rem; color: var(--ink-soft); }
+  @media (max-width: 480px){
+    .founder-card{ flex-direction:column; }
+  }
+
   .cta-row{ display:flex; flex-wrap: wrap; gap:12px; align-items:center; }
   .btn{
     display:inline-flex; align-items:center; justify-content:center; gap:8px;
@@ -609,7 +630,7 @@
 
     <div class="cta-row">
       <a href="#outil" class="btn btn-primary">Générer ma relance maintenant</a>
-      <a href="#pro" class="btn btn-ghost">Voir la version automatique (Pro)</a>
+      <a href="#pro" class="btn btn-ghost">Envois automatiques J+7/J+15/J+30 (Pro)</a>
     </div>
     <p class="micro-note">Aucune donnée envoyée nulle part : tout se génère directement dans votre navigateur.</p>
 
@@ -618,6 +639,27 @@
       <li><span aria-hidden="true">🔒</span> Rien n'est envoyé à un serveur : tout reste dans votre navigateur</li>
       <li><span aria-hidden="true">⚖️</span> Mentions conformes au Code de commerce (art. L441-10)</li>
     </ul>
+  </section>
+
+  <hr class="tear">
+
+  <!-- ============ FONDATEUR ============ -->
+  <section id="fondateur">
+    <div class="founder-card">
+      <span class="founder-avatar" aria-hidden="true">M</span>
+      <div class="founder-text">
+        <p class="founder-quote">
+          « J'ai créé Relance Chantier après avoir vécu, comme beaucoup d'artisans du bâtiment,
+          la galère des factures qui traînent et des relances qu'on ne sait jamais bien formuler.
+          Je voulais un outil simple, gratuit à la base, et qui respecte vos clients comme les
+          miens : rien de ce que vous saisissez n'est envoyé sur un serveur, tout reste dans
+          votre navigateur. »
+        </p>
+        <p class="founder-signature">
+          <strong>Maël Siohan</strong> — fondateur de Relance Chantier, artisan du bâtiment.
+        </p>
+      </div>
+    </div>
   </section>
 
   <hr class="tear">
