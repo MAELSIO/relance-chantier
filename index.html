@@ -541,6 +541,42 @@
   .waitlist-status.ok{ color: #8fd08f; font-weight:700; }
   .plan-card.highlight .waitlist-status.ok{ color: var(--green-ok); }
 
+  /* ---------- témoignages ---------- */
+  .testimonials{
+    display:grid; grid-template-columns: 1fr; gap: 18px;
+  }
+  @media (min-width: 700px){ .testimonials{ grid-template-columns: repeat(2, 1fr); } }
+  .testimonial{
+    background: var(--paper-2);
+    border: 1px solid var(--paper-edge);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-paper);
+    padding: 20px 22px;
+    display:flex; flex-direction:column; gap:12px;
+  }
+  .testimonial-stars{ color: var(--yellow); font-size: .95rem; letter-spacing: 2px; }
+  .testimonial-quote{
+    margin:0; font-style: italic; color: var(--ink);
+  }
+  .testimonial-quote::before{ content:"\201C"; }
+  .testimonial-quote::after{ content:"\201D"; }
+  .testimonial-who{ display:flex; align-items:center; gap:10px; }
+  .testimonial-avatar{
+    width: 36px; height:36px; border-radius:50%;
+    background: var(--orange); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:900; font-size:1rem; flex-shrink:0;
+    box-shadow: 0 2px 0 var(--orange-dark);
+  }
+  .testimonial-photo{ width:36px; height:36px; border-radius:50%; object-fit:cover; flex-shrink:0; }
+  .testimonial-name{ font-weight:800; font-size:.88rem; }
+  .testimonial-meta{ font-size:.78rem; color: var(--ink-soft); }
+  .testimonial-source{
+    font-size:.78rem; font-weight:800; color: var(--orange-dark);
+    text-decoration:none; align-self:flex-start;
+  }
+  .testimonial-source:hover{ text-decoration: underline; }
+
   /* ---------- faq ---------- */
   .faq-item{
     border-bottom: 1px solid var(--paper-edge);
@@ -670,6 +706,20 @@
   </section>
 
   <hr class="tear">
+
+  <!-- ============ TÉMOIGNAGES ============ -->
+  <div id="temoignages">
+    <section>
+      <div class="section-head">
+        <p class="eyebrow">Ils l'ont utilisé</p>
+        <h2>Ce qu'en disent les artisans</h2>
+        <p class="section-sub">Retours recueillis directement auprès de nos utilisateurs, avec leur accord.</p>
+      </div>
+      <div class="testimonials" id="testimonialsList"></div>
+    </section>
+
+    <hr class="tear">
+  </div>
 
   <!-- ============ DEMO VIDEO ============ -->
   <section id="demo">
@@ -994,6 +1044,15 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="assets/data/testimonials.js"></script>
+<script src="assets/js/testimonials.js"></script>
+<script>
+  renderTestimonials(window.RC_TESTIMONIALS, {
+    sectionId: 'temoignages',
+    containerId: 'testimonialsList',
+    org: { name: 'Relance Chantier', url: 'https://www.relancechantier.fr' }
+  });
+</script>
 <script>
 (function(){
   "use strict";
