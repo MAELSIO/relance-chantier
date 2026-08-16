@@ -135,6 +135,36 @@ p{ margin: 0 0 14px; }
 .blog-card h3{ margin: 0 0 8px; font-size: 1.08rem; }
 .blog-card p{ color: var(--ink-soft); font-size:.92rem; margin:0; }
 
+/* ---------- page à propos / fondateur ---------- */
+.about-hero{
+  display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;
+  background: var(--paper-2);
+  border: 1px solid var(--paper-edge);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-paper);
+  padding: 28px clamp(18px, 4vw, 36px);
+  margin: 22px 0 30px;
+}
+/* Emplacement prêt à recevoir une vraie photo : remplacer ce <div> par
+   <img src="assets/img/fondateur.jpg" alt="Maël Siohan, fondateur de Relance Chantier" class="about-photo">
+   dès qu'une photo réelle est disponible. Ne jamais utiliser une photo générée ou un portrait fictif ici. */
+.about-avatar-placeholder{
+  flex-shrink:0; width: 96px; height:96px; border-radius:50%;
+  background: var(--orange); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:900; font-size:2.2rem;
+  box-shadow: 0 4px 0 var(--orange-dark);
+}
+.about-photo{
+  flex-shrink:0; width: 96px; height:96px; border-radius:50%; object-fit:cover;
+  box-shadow: 0 4px 0 var(--orange-dark);
+}
+.about-hero-text{ flex: 1 1 320px; }
+.about-hero-text h1{ margin:0 0 6px; }
+.about-hero-text .role{ color: var(--ink-soft); font-weight:700; font-size:.9rem; margin:0; }
+.about-body p{ margin: 0 0 16px; }
+.about-body p:last-child{ margin-bottom: 0; }
+
 .final-cta{
   background: var(--paper-2);
   border: 1px solid var(--paper-edge);

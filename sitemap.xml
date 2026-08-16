@@ -73,6 +73,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://www.relancechantier.fr/a-propos.html</loc>
+    <lastmod>2026-08-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://www.relancechantier.fr/mentions-legales.html</loc>
     <lastmod>2026-08-15</lastmod>
     <changefreq>yearly</changefreq>
