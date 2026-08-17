@@ -36,3 +36,13 @@ CREATE TABLE IF NOT EXISTS reminder_log (
   sent_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   email_status TEXT NOT NULL
 );
+
+-- Migration : programme de parrainage (idempotente, sûre à rejouer).
+-- referral_code : code partageable propre à chaque utilisateur (généré à
+--   la demande, voir src/referrals.js — pas de valeur par défaut ici pour
+--   ne pas devoir backfiller tous les comptes existants d'un coup).
+-- referred_by_user_id : parrain de ce compte, s'il s'est inscrit via un
+--   lien de parrainage. Permet de tracer jusqu'à l'abonnement payant en
+--   croisant avec la colonne `plan` (voir src/referrals.js).
+ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code TEXT UNIQUE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by_user_id INTEGER REFERENCES users(id);

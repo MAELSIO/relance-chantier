@@ -297,6 +297,22 @@
       </button>
       <p class="msg" id="upgradeMsg"></p>
     </div>
+
+    <div class="card">
+      <h1 style="font-size:1.05rem;">🎁 Parrainage</h1>
+      <p class="sub" style="margin-bottom:14px;">
+        Partagez votre lien avec un autre artisan. La récompense pour vous deux sera annoncée
+        bientôt — en attendant, chaque inscription via votre lien compte.
+      </p>
+      <div class="field">
+        <label for="referralLink">Votre lien de parrainage</label>
+        <input type="text" id="referralLink" readonly>
+      </div>
+      <button class="btn btn-ghost" id="copyReferralBtn" type="button">Copier le lien</button>
+      <p class="sub" style="margin:12px 0 0;">
+        <strong id="referralCount">0</strong> filleul(s) inscrit(s) via votre lien.
+      </p>
+    </div>
   </div>
 
 </main>
@@ -308,10 +324,20 @@
   var API_BASE = localStorage.getItem('rc_api_base') || 'https://relance-chantier-api.onrender.com';
 
   var TOKEN_KEY = 'rc_pro_token';
+  var REF_KEY = 'rc_referral_code';
 
   function getToken(){ return localStorage.getItem(TOKEN_KEY); }
   function setToken(t){ localStorage.setItem(TOKEN_KEY, t); }
   function clearToken(){ localStorage.removeItem(TOKEN_KEY); }
+
+  // Capture le code de parrainage present dans l'URL (?ref=XXXX) au premier
+  // chargement pour le reutiliser au moment de l'inscription, meme si
+  // l'utilisateur navigue un peu avant de creer son compte.
+  (function captureReferralCode(){
+    var params = new URLSearchParams(window.location.search);
+    var ref = params.get('ref');
+    if (ref) localStorage.setItem(REF_KEY, ref.trim());
+  })();
 
   function api(path, options){
     options = options || {};
@@ -384,10 +410,12 @@
       body: JSON.stringify({
         artisanName: document.getElementById('regName').value.trim(),
         email: document.getElementById('regEmail').value.trim(),
-        password: document.getElementById('regPassword').value
+        password: document.getElementById('regPassword').value,
+        referralCode: localStorage.getItem(REF_KEY) || undefined
       })
     }).then(function(data){
       setToken(data.token);
+      localStorage.removeItem(REF_KEY);
       loadDashboard();
     }).catch(function(err){
       msg.textContent = err.message; msg.className = 'msg error';
@@ -476,6 +504,11 @@
           ? "Vous avez utilisé vos 5 envois automatiques gratuits. L'abonnement Pro débloque l'envoi illimité."
           : "Débloquez l'envoi automatique illimité, au-delà des " + me.freeAutoSendLimit + " essais gratuits.";
       }
+      if (me.referralCode){
+        document.getElementById('referralLink').value =
+          'https://www.relancechantier.fr/pro/?ref=' + me.referralCode;
+      }
+      document.getElementById('referralCount').textContent = me.referralCount || 0;
     });
   }
 

@@ -7,6 +7,7 @@ const db = require('./db');
 const { hashPassword, verifyPassword, signToken, requireAuth } = require('./auth');
 const { startScheduler, runReminderSweep, FREE_AUTO_SEND_LIMIT } = require('./scheduler');
 const { createCheckoutSession, verifyWebhook, getStripe } = require('./billing');
+const { getOrCreateReferralCode, getReferralCount, attributeReferral } = require('./referrals');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -74,7 +75,7 @@ const authLimiter = rateLimit({
 // ---------- Auth ----------
 
 app.post('/api/auth/register', authLimiter, async (req, res) => {
-  const { email, password, artisanName } = req.body || {};
+  const { email, password, artisanName, referralCode } = req.body || {};
   if (!email || !password || !artisanName) {
     return res.status(400).json({ error: 'email, password et artisanName sont requis.' });
   }
@@ -94,6 +95,9 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
     [email, passwordHash, artisanName]
   );
   const user = { id: rows[0].id, email };
+  // Non bloquant : un souci d'attribution de parrainage ne doit jamais
+  // empêcher la création du compte.
+  await attributeReferral(user.id, referralCode).catch(() => {});
   res.status(201).json({ token: signToken(user) });
 });
 
@@ -115,7 +119,11 @@ app.get('/api/me', requireAuth, async (req, res) => {
     'SELECT id, email, artisan_name, plan, auto_sends_used FROM users WHERE id = $1',
     [req.userId]
   );
-  res.json({ ...rows[0], freeAutoSendLimit: FREE_AUTO_SEND_LIMIT });
+  const [referralCode, referralCount] = await Promise.all([
+    getOrCreateReferralCode(req.userId),
+    getReferralCount(req.userId),
+  ]);
+  res.json({ ...rows[0], freeAutoSendLimit: FREE_AUTO_SEND_LIMIT, referralCode, referralCount });
 });
 
 app.delete('/api/me', requireAuth, async (req, res) => {
