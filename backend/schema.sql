@@ -46,3 +46,8 @@ CREATE TABLE IF NOT EXISTS reminder_log (
 --   croisant avec la colonne `plan` (voir src/referrals.js).
 ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code TEXT UNIQUE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by_user_id INTEGER REFERENCES users(id);
+
+-- Récompense de parrainage : 1 mois offert au parrain ET au filleul,
+-- crédité (Stripe customer balance) quand le filleul devient réellement
+-- payant. NULL tant que non accordée — voir src/referrals.js.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_reward_granted_at TIMESTAMPTZ;

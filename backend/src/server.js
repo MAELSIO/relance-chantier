@@ -7,7 +7,7 @@ const db = require('./db');
 const { hashPassword, verifyPassword, signToken, requireAuth } = require('./auth');
 const { startScheduler, runReminderSweep, FREE_AUTO_SEND_LIMIT } = require('./scheduler');
 const { createCheckoutSession, verifyWebhook, getStripe } = require('./billing');
-const { getOrCreateReferralCode, getReferralCount, attributeReferral } = require('./referrals');
+const { getOrCreateReferralCode, getReferralCount, attributeReferral, grantReferralRewardIfDue } = require('./referrals');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -49,6 +49,12 @@ app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), asyn
         "UPDATE users SET plan = 'pro', stripe_customer_id = $1, stripe_subscription_id = $2 WHERE id = $3",
         [session.customer, session.subscription, userId]
       );
+      // Le checkout vient de reussir (pas d'essai gratuit sur RC) : c'est le
+      // moment ou le filleul devient reellement payant, declencheur choisi
+      // pour la recompense de parrainage.
+      await grantReferralRewardIfDue(Number(userId), session.amount_total, session.currency).catch((err) => {
+        console.error('Erreur recompense parrainage:', err.message);
+      });
     }
   } else if (event.type === 'customer.subscription.deleted' || event.type === 'customer.subscription.updated') {
     const sub = event.data.object;
