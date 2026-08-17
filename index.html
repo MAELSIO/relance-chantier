@@ -1018,6 +1018,29 @@
     </details>
   </section>
 
+  <hr class="tear">
+
+  <!-- ============ NEWSLETTER ============ -->
+  <section id="newsletter">
+    <div class="founder-card" style="align-items:flex-start;">
+      <span aria-hidden="true" style="font-size:1.6rem;">📬</span>
+      <div style="flex:1;">
+        <p style="font-weight:800; margin:0 0 6px;">Pas encore prêt à essayer ?</p>
+        <p class="section-sub" style="margin:0 0 14px;">
+          Recevez nos guides juridiques sur les impayés BTP (délais de paiement, mise en demeure,
+          pénalités de retard) directement par email, gratuitement.
+        </p>
+        <form id="newsletterForm" class="waitlist-form" style="max-width:420px;">
+          <label for="newsletterEmail" class="sr-only" style="position:absolute;left:-9999px;">Votre email</label>
+          <input type="email" id="newsletterEmail" name="email" placeholder="votre@email.fr" required>
+          <button type="submit" class="btn btn-primary">Recevoir les guides</button>
+        </form>
+        <p class="waitlist-status" id="newsletterStatus"></p>
+        <p class="micro-note">🔒 Pas de spam, désinscription en un clic à tout moment.</p>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ MENTIONS LEGALES ============ -->
   <section id="mentions-legales">
     <div class="section-head">
@@ -1361,6 +1384,48 @@
       emailInput.disabled = true;
     });
   });
+
+  /* ---------- Newsletter guides (via FormSubmit.co, meme mecanisme) ---------- */
+  var newsletterForm = document.getElementById('newsletterForm');
+  var newsletterStatus = document.getElementById('newsletterStatus');
+  if (newsletterForm){
+    newsletterForm.addEventListener('submit', function(e){
+      e.preventDefault();
+      var email = document.getElementById('newsletterEmail').value.trim();
+      if (!email) return;
+
+      var submitBtn = newsletterForm.querySelector('button');
+      var emailInput = newsletterForm.querySelector('input');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Envoi...';
+
+      try {
+        var log = JSON.parse(localStorage.getItem('rc_newsletter') || '[]');
+        log.push({ email: email, date: new Date().toISOString() });
+        localStorage.setItem('rc_newsletter', JSON.stringify(log));
+      } catch(err){}
+
+      fetch('https://formsubmit.co/ajax/' + WAITLIST_NOTIFY_EMAIL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          email: email,
+          _subject: 'Nouvelle inscription newsletter guides',
+          message: 'Inscription newsletter guides Relance Chantier : ' + email
+        })
+      }).then(function(){
+        newsletterStatus.textContent = "Merci ! Vous recevrez nos prochains guides par email.";
+        newsletterStatus.classList.add('ok');
+        submitBtn.textContent = 'Inscrit ✓';
+        emailInput.disabled = true;
+      }).catch(function(){
+        newsletterStatus.textContent = "Bien reçu — un souci technique est possible, réessayez plus tard si besoin.";
+        newsletterStatus.classList.add('ok');
+        submitBtn.textContent = 'Inscrit ✓';
+        emailInput.disabled = true;
+      });
+    });
+  }
 
   /* ---------- Stripe (scaffold uniquement, non branché) ---------- */
   // TODO(stripe) : quand le paiement Pro sera prêt, remplacer le formulaire
