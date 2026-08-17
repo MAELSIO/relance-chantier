@@ -617,15 +617,29 @@
     .result-card{ box-shadow:none; border:none; padding:0; }
     .stamp{ display:none; }
   }
+
+  /* ---------- bandeau cookies ---------- */
+  .cookie-banner{
+    position: fixed; left:0; right:0; bottom:0; z-index:300;
+    background: var(--ink); color: var(--paper);
+    padding: 16px 20px; box-shadow: 0 -8px 24px rgba(0,0,0,.25);
+    transform: translateY(110%); transition: transform .35s ease;
+  }
+  .cookie-banner.show{ transform: translateY(0); }
+  .cookie-inner{
+    max-width: 880px; margin:0 auto;
+    display:flex; flex-wrap:wrap; align-items:center; gap:14px 20px;
+  }
+  .cookie-text{ flex:1 1 320px; font-size:.85rem; color:#d8cdb8; margin:0; }
+  .cookie-text a{ text-decoration:underline; color:#fff; }
+  .cookie-actions{ display:flex; gap:10px; flex-wrap:wrap; }
+  .cookie-actions .btn{ padding:10px 18px; font-size:.85rem; }
+  .cookie-actions .btn-ghost{ border-color:#fff; color:#fff; }
+  .cookie-actions .btn-ghost:hover{ background:#fff; color:var(--ink); }
 </style>
+<!-- GoatCounter : cookieless, exempté de consentement CNIL, reste actif. -->
 <script data-goatcounter="https://maelsiohan.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-48Y5HW2GTY"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-48Y5HW2GTY');
-</script>
+<!-- Google Analytics 4 : chargé uniquement après consentement, voir assets/js/consent.js -->
 </head>
 <body>
 
@@ -1059,6 +1073,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="assets/js/consent.js"></script>
 <script src="assets/data/testimonials.js"></script>
 <script src="assets/js/testimonials.js"></script>
 <script>

@@ -34,20 +34,24 @@
 
       <h2>Ce que nous utilisons</h2>
       <p>
-        Relance Chantier n'utilise aucun cookie publicitaire et ne fait aucun profilage. Le site utilise
-        seulement :
+        Relance Chantier n'utilise aucun cookie publicitaire et ne fait aucun profilage. Le site utilise :
       </p>
       <ul>
-        <li><strong>Un outil de mesure d'audience respectueux de la vie privée (GoatCounter)</strong>, qui compte les visites et l'usage du générateur sans déposer de cookie individuel et sans transmettre vos données à des régies publicitaires.</li>
-        <li><strong>Un stockage technique local (localStorage)</strong>, uniquement sur l'espace Pro, pour vous garder connecté entre deux visites. Il ne quitte jamais votre navigateur.</li>
+        <li><strong>GoatCounter</strong>, un outil de mesure d'audience qui ne dépose aucun cookie et ne vous identifie pas individuellement. Toujours actif, sans consentement requis, conformément à l'exemption CNIL pour ce type d'outil.</li>
+        <li><strong>Google Analytics 4</strong>, qui dépose des cookies de mesure d'audience (<code>_ga</code>). <strong>Chargé uniquement si vous cliquez sur « Accepter »</strong> sur le bandeau affiché en bas de page — jamais avant.</li>
+        <li><strong>Un stockage technique local (localStorage)</strong>, pour mémoriser votre choix sur le bandeau, et sur l'espace Pro pour vous garder connecté entre deux visites. Il ne quitte jamais votre navigateur.</li>
       </ul>
 
       <h2>Votre choix</h2>
       <p>
-        Aucun cookie de mesure d'audience individualisé n'est déposé : GoatCounter ne dépose pas de traceur
-        identifiant un visiteur en particulier, ce qui ne nécessite pas de consentement préalable au sens de la
-        CNIL. Utiliser le générateur gratuit ou vous inscrire à l'offre Pro ne dépend jamais de ce choix.
+        Refuser est aussi simple qu'accepter : aucune case n'est cochée par défaut, refuser n'empêche jamais
+        d'utiliser le générateur gratuit ou de vous inscrire à l'offre Pro, et Google Analytics ne se charge pas
+        tant que vous n'avez pas cliqué sur « Accepter ». Un refus supprime aussi les cookies déjà déposés le
+        cas échéant. Vous pouvez changer d'avis à tout moment.
       </p>
+      <button type="button" class="btn btn-primary" onclick="window.rcOpenCookieSettings && window.rcOpenCookieSettings();">
+        Gérer mes préférences cookies
+      </button>
 
       <h2>En savoir plus</h2>
       <p>
@@ -72,5 +76,6 @@
   </div>
 </footer>
 
+<script src="assets/js/consent.js"></script>
 </body>
 </html>
