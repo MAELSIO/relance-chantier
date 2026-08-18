@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS reminder_log (
 --   lien de parrainage. Permet de tracer jusqu'à l'abonnement payant en
 --   croisant avec la colonne `plan` (voir src/referrals.js).
 ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code TEXT UNIQUE;
-ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by_user_id INTEGER REFERENCES users(id);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;
 
 -- Récompense de parrainage : 1 mois offert au parrain ET au filleul,
 -- crédité (Stripe customer balance) quand le filleul devient réellement

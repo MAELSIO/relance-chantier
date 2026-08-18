@@ -1,4 +1,5 @@
 require('dotenv').config();
+const crypto = require('crypto');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -10,6 +11,20 @@ const { createCheckoutSession, verifyWebhook, getStripe } = require('./billing')
 const { getOrCreateReferralCode, getReferralCount, attributeReferral, grantReferralRewardIfDue } = require('./referrals');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Comparaison en temps constant : évite qu'une attaque par timing révèle la
+// clé admin caractère par caractère. Pas de valeur par défaut ('dev-admin-key'
+// était codée en dur dans le dépôt) : ADMIN_KEY absente en prod doit rejeter,
+// pas ouvrir grand.
+function isValidAdminKey(req) {
+  const provided = req.headers['x-admin-key'];
+  const expected = process.env.ADMIN_KEY;
+  if (!provided || !expected) return false;
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
 
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ||
   'https://www.relancechantier.fr,https://relancechantier.fr,https://maelsio.github.io'
@@ -59,8 +74,13 @@ app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), asyn
   } else if (event.type === 'customer.subscription.deleted' || event.type === 'customer.subscription.updated') {
     const sub = event.data.object;
     const isActive = sub.status === 'active' || sub.status === 'trialing';
+    // auto_sends_used est un compteur a vie (pas mensuel) : sans remise a zero
+    // ici, un utilisateur qui redescend en Free avec un vieux solde >= 5 ne
+    // recevrait plus jamais de relance automatique gratuite.
     await db.query(
-      'UPDATE users SET plan = $1 WHERE stripe_subscription_id = $2',
+      isActive
+        ? 'UPDATE users SET plan = $1 WHERE stripe_subscription_id = $2'
+        : 'UPDATE users SET plan = $1, auto_sends_used = 0 WHERE stripe_subscription_id = $2',
       [isActive ? 'pro' : 'free', sub.id]
     );
   }
@@ -247,7 +267,7 @@ app.get('/api/invoices/:id/reminders', requireAuth, async (req, res) => {
 // ---------- Manual trigger (testing / admin) ----------
 
 app.post('/api/admin/run-sweep', async (req, res) => {
-  if (req.headers['x-admin-key'] !== (process.env.ADMIN_KEY || 'dev-admin-key')) {
+  if (!isValidAdminKey(req)) {
     return res.status(403).json({ error: 'Clé admin invalide.' });
   }
   const results = await runReminderSweep();

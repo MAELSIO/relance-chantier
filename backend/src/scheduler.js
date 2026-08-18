@@ -16,7 +16,22 @@ function nextLevelDue(invoice) {
   return due;
 }
 
+// Verrou en mémoire : le workflow GitHub Actions rappelle /api/admin/run-sweep
+// avec --retry en cas de timeout, mais le process peut encore etre en train de
+// traiter le sweep precedent (pas de coupure cote serveur a la deconnexion du
+// client). Sans ce verrou, deux sweeps concurrents relisent last_reminder_level
+// avant que l'un des deux ecrive, et envoient chacun leur relance en double.
+let sweepPromise = null;
+
 async function runReminderSweep() {
+  if (sweepPromise) return sweepPromise;
+  sweepPromise = runReminderSweepUnlocked().finally(() => {
+    sweepPromise = null;
+  });
+  return sweepPromise;
+}
+
+async function runReminderSweepUnlocked() {
   const { rows: users } = await db.query('SELECT * FROM users');
   const results = [];
 

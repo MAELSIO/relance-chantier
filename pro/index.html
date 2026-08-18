@@ -440,6 +440,11 @@
     return new Date(d).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' });
   }
   var LEVEL_LABEL = { 0: 'Pas encore relancé', 1: 'Relance amicale envoyée', 2: 'Relance ferme envoyée', 3: 'Mise en demeure envoyée' };
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
 
   function renderInvoices(invoices){
     var list = document.getElementById('invoiceList');
@@ -454,7 +459,7 @@
       card.className = 'invoice-card';
       card.innerHTML =
         '<div class="invoice-main">' +
-          '<div class="invoice-client">' + inv.client_name + '</div>' +
+          '<div class="invoice-client">' + escapeHtml(inv.client_name) + '</div>' +
           '<div class="invoice-meta">' + fmtAmount(inv.amount) + ' · échéance ' + fmtDate(inv.due_date) +
           (late > 0 ? ' · ' + late + 'j de retard' : '') + '</div>' +
         '</div>' +
